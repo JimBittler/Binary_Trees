@@ -1,13 +1,14 @@
+from __future__ import annotations
 import functools as fn
 import time
 import numpy as np
 
 class BT_Node():
-    def __init__(self, val:float=None):
-        # self.parent = None
+    def __init__(self, val:float=None, parent:BT_Node=None):
+        self.value = val
+        self.parent = None
         self.left_child = None
         self.right_child = None
-        self.value = val
 
     def clear(self):
         self.__init__()
@@ -64,7 +65,7 @@ class BT_Tree():
         if val < parent_node.value:
             # If there is no left child, add a node with input value
             if parent_node.left_child is None:
-                parent_node.left_child = BT_Node(val=val)
+                parent_node.left_child = BT_Node(val=val, parent=parent_node)
                 self._node_count += 1
             # Else continue recursive search
             else:
@@ -74,7 +75,7 @@ class BT_Tree():
         else:
             # If there is no right child, add a node with input value
             if parent_node.right_child is None:
-                parent_node.right_child = BT_Node(val)
+                parent_node.right_child = BT_Node(val=val, parent=parent_node)
                 self._node_count += 1
             # Else continue recursive search
             else:
@@ -255,10 +256,9 @@ def printBTree(node:BT_Node, inverted=False, _isTop=True):
 
 def main():
 
-    n = 2 ** 6
+    n = 2 ** 3
     s = 45
     seed = 0
-
     np.random.seed(seed)
 
     val = np.random.randint(low=0, high=10 * n, size=n)
@@ -266,6 +266,9 @@ def main():
     t = BT_Tree()
     for this_val in val:
         t.add(this_val)
+
+    print(t.root.left_child.value)
+    return
 
     nearest_s = val[np.argmin(np.abs(val - s))]
 
