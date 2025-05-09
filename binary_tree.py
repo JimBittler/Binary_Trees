@@ -6,9 +6,10 @@ import numpy as np
 class BT_Node():
     def __init__(self, val:float=None, parent:BT_Node=None):
         self.value = val
-        self.parent = None
+        self.parent = parent
         self.left_child = None
         self.right_child = None
+        self.node_count = 1
 
     def clear(self):
         self.__init__()
@@ -19,7 +20,6 @@ class BT_Tree():
     def __init__(self):
         self._root = None
         self._depth = 0
-        self._node_count = 0
         self._search_depth = 0
 
     # Properties
@@ -34,7 +34,7 @@ class BT_Tree():
 
     @property
     def node_count(self):
-        return self._node_count
+        return self.root.node_count
 
     # Add node
     # --------------------------------
@@ -43,7 +43,7 @@ class BT_Tree():
         # If the tree has no root, assign input value
         if self._root is None:
             self._root = BT_Node(val)
-            self._node_count += 1
+            self._root.node_count = 1 # root node now exists but has no children
             self._search_depth = 0
         # Else call private recursive add method
         else:
@@ -57,46 +57,48 @@ class BT_Tree():
         self._search_depth = 0
 
     # Private add method: recursely search tree for parent node under which current value should be added as child
-    def _add_recursive(self, val:float, parent_node:BT_Node):
+    def _add_recursive(self, val:float, parent_node:BT_Node=None):
         # Increment search depth
         self._search_depth += 1
+        parent_node.node_count += 1
 
         # Inspect left child
         if val < parent_node.value:
             # If there is no left child, add a node with input value
             if parent_node.left_child is None:
                 parent_node.left_child = BT_Node(val=val, parent=parent_node)
-                self._node_count += 1
+                # self._node_count += 1
             # Else continue recursive search
             else:
                 self._add_recursive(val, parent_node.left_child)
+
 
         # Inspect right child
         else:
             # If there is no right child, add a node with input value
             if parent_node.right_child is None:
                 parent_node.right_child = BT_Node(val=val, parent=parent_node)
-                self._node_count += 1
+                # self._node_count += 1
             # Else continue recursive search
             else:
                 self._add_recursive(val, parent_node.right_child)
 
-    # Find Node
+    # Find Node By Value
     # --------------------------------
     # Public search method, begins at the root of the tree
-    def find(self, val:float=None):
+    def find_val(self, val:float=None):
         # If no value is passed, or tree has no root, return none
         if val is None or self.root is None:
             nearest_value = None
         # Else search the tree beginning at the root node
         else:
-            nearest_value = self._find(val, self._root)
+            nearest_value = self._find_val(val, self._root)
 
         # return solution
         return nearest_value
 
     # Private search method: recursely search tree for node with value val
-    def _find(self, val:float, parent_node:BT_Node):
+    def _find_val(self, val:float, parent_node:BT_Node=None):
         # Check parent node value
         if val == parent_node.value:
             nearest_value = parent_node.value
@@ -107,7 +109,7 @@ class BT_Tree():
                 nearest_value = parent_node.value
             # Else, search left child
             else:
-                nearest_value = self._find(val, parent_node.left_child)
+                nearest_value = self._find_val(val, parent_node.left_child)
         # Check right child value
         else:
             # If no right child, return parent
@@ -115,7 +117,7 @@ class BT_Tree():
                 nearest_value = parent_node.value
             # Else, search right child
             else:
-                nearest_value = self._find(val, parent_node.right_child)
+                nearest_value = self._find_val(val, parent_node.right_child)
 
         # Check if parent node value is closer than child node
         if abs(parent_node.value - val) < abs(nearest_value - val):
@@ -123,6 +125,48 @@ class BT_Tree():
 
         # Return nearest value
         return nearest_value
+
+    # Find kth Largest Node
+    # --------------------------------
+    # Public search method, begins at the root of the tree
+    def find_kth(self, kth:int=0):
+        if kth<0:
+            kth += (self.node_count + 1)  # check that this is right
+
+        # If no value is passed, or tree has no root, return none
+        if self.root is None:
+            kth_value = None
+        # Root is the only node
+        elif self.node_count == 1:
+            kth_value = self.root.value
+        # Recursive case
+        else:
+            kth_value = self._find_kth(kth, self.root)
+
+        return kth_value
+
+    # Private search method: recursely search tree for node with value val
+    def _find_kth(self, kth:int=0, parent_node:BT_Node=None):
+
+        # Left child exists
+        if parent_node.left_child is not None:
+            if kth == parent_node.left_child.node_count:
+                kth_value = parent_node.value
+            elif kth < parent_node.left_child.node_count:
+                kth_value = self._find_kth(kth, parent_node.left_child)
+            elif parent_node.right_child is not None:
+                kth_value = self._find_kth(kth - parent_node.left_child.node_count - 1, parent_node.right_child)
+            else:
+                kth_value = parent_node.value
+        # Left child does not exist
+        else:
+            if kth == 0:
+                kth_value = parent_node.value
+            else:
+                kth_value = self._find_kth(kth - 1, parent_node.right_child)
+
+        return kth_value
+
 
     # Print Tree
     # --------------------------------
@@ -256,8 +300,9 @@ def printBTree(node:BT_Node, inverted=False, _isTop=True):
 
 def main():
 
-    n = 2 ** 3
+    n = 2 ** 20
     s = 45
+    k = int(n / 2)
     seed = 0
     np.random.seed(seed)
 
@@ -267,18 +312,38 @@ def main():
     for this_val in val:
         t.add(this_val)
 
-    print(t.root.left_child.value)
-    return
+    print(f"elements in vector = {n}")
+    print(f"search for kth element; k = {k}")
+    print(16 * '=')
+    t_ini = time.perf_counter()
+    print(f"kth element found by Numpy: {np.partition(val, kth=k)[k]}")
+    print(f"time required: {time.perf_counter() - t_ini:.6f} [s]")
 
+    print(16 * '=')
+    t_ini = time.perf_counter()
+    print(f"kth element found by BTree: {t.find_kth(k)}")
+    print(f"time required: {time.perf_counter() - t_ini:.6f} [s]")
+
+    return
     nearest_s = val[np.argmin(np.abs(val - s))]
 
+    print(16 * '=')
     print(f"node count: {t.node_count}")
+    print(f"actual node count: {n}")
+    print(16 * '=')
     print(f"min depth: {int(np.ceil(np.log2(n)))}")
     print(f"actual depth: {t.depth}")
+    print(16 * '=')
     print(f"nearest s = {s}: {nearest_s}")
-    print(f"found nearest s = {s}: {t.find(s)}")
+    print(f"found nearest s = {s}: {t.find_val(s)}")
+    print(16 * '=')
+    print(f"found {k}th largest: {t.find_kth(k)}")
+    print(f"actual {k}th largest: {np.partition(val, kth=k)[k]}")
 
     t.print()
+
+    for kth in range(n-1):
+        print((int(t.find_kth(kth)), int(np.partition(val, kth=kth)[kth])))
 
 if __name__ == '__main__':
     main()
