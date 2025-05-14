@@ -7,8 +7,9 @@ Dependencies: None
 * class *BT_Tree*: sorted, unbalanced binary tree
 
 ## test_cases.py
-Various tests of binary tree class properties and methods.
 Dependencies: Numpy, binary_tree.py\
+Various tests of binary tree class properties and methods.
+
 
 ## Usefule References
 [Binary Tree Overview from Carnige Mellon University](https://www.andrew.cmu.edu/course/15-121/lectures/Trees/trees.html)\
