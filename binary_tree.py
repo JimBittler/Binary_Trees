@@ -1,30 +1,43 @@
 from __future__ import annotations  # needed to allow argument typing for BT_Node, specifically allow input parameter to BT_Node to be of type BT_Node
-import string
-import time
-import numpy as np
+
+"""
+This module contains binary tree node class and an sorted, unbalanced binary tree class.
+BT_Node: node with contains a key-value pair, where nodes are expected to be sorted by keys.
+BT_Tree: Sorted, unbalanced binary tree with methods including:
+    • add and delete nodes
+    • find nodes by key or index
+    • print ascii representation of the binary tree or a specific branch
+"""
 
 """
 TODO:
 1) Comments and docstrings:
     1.a) ✓ BT_Node
-    1.b) BT_Tree
+    1.b) ✓ BT_Tree
         1.b.i)      ✓ add
         1.b.ii)     ✓ add_recursive
-        1.b.iii)    find
-        1.b.iv)     find_recursive
-        1.b.v)      find_kth
-        1.b.vi)     find_kth_recursive
+        1.b.iii)    ✓ find
+        1.b.iv)     ✓ find_recursive
+        1.b.v)      ✓ find_kth
+        1.b.vi)     ✓ find_kth_recursive
         1.b.vii)    ✓ print
         1.b.viii)   ✓ clear
-        1.b.ix)     FUTURE
-2) add print_from_this_node(...)
-    2.a) find should return a node
-    2.b) find_kth should return a node
+        1.b.ix)     ✓ print_branch
+    1.c) ✓ This module
+2) ✓ add print_from_this_node(...)
+    2.a) ✓ find should return a node or None
+    2.b) ✓ find_kth should return a node or None
+    2.c) ✓ I don't know if this is even useful.
 3) Red-Black
     3.a) add color properties
     3.b) rotate function
     3.c) balance logic
-4) Move test function to new file
+4) ✓ Move test function to new file
+5) Node clear method should cause:
+    5.a) tree height recalculate
+    5.b) node count recalculation
+        5.b.i) parent.node_count -= self.node_count
+        5.c.ii) apply recursively up to root
 """
 
 class BT_Node():
@@ -66,7 +79,7 @@ class BT_Tree():
     # Properties
     # --------------------------------
     @property
-    def root(self) -> None:
+    def root(self) -> BT_Node:
         return self._root
 
     @property
@@ -79,11 +92,10 @@ class BT_Tree():
 
     # Add node
     # --------------------------------
-    # Public add method: begins at root of the tree
     def add(self, key:float=None, value:any=None) -> None:
         """
         Add node to the binary tree, sorted by its key.
-        :param key: Numeric which dictates location of the node when added to an ordered binary tree. Does not need to be unique.
+        :param key: Numeric value which dictates location of the node when added to an ordered binary tree. Does not need to be unique.
         :param value: Data stored in the node.
         :return: None
         """
@@ -101,7 +113,6 @@ class BT_Tree():
         if new_node_depth > self._height:
             self._height = new_node_depth
 
-    # Private add method: recursely search tree for parent node under which current key should be added as child
     def _add_recursive(self, key:float, value:any, parent_node:BT_Node=None, new_node_depth:int=0) -> int:
         """
         Private method which adds a node to a sorted binary tree, sorted by its key. The correct location at which to
@@ -139,89 +150,130 @@ class BT_Tree():
         # Return depth at which the new node was added
         return new_node_depth
 
-    # Find Node By Value
+    # Find Node By Key
     # --------------------------------
-    # Public search method, begins at the root of the tree
-    def find_val(self, val:float=None):
+    def find_node(self, key:float=None, nearest:bool=False) -> BT_Node | None:
+        """
+        Find node whose key matches the input key.
+        :param key: Numeric key to find in the binary tree.
+        :param nearest: Flag, if true and the tree does not contain a node with the input key, the node with the
+        nearest key will be returned, else None will be returned.
+        :return: Node whose key matches the input key, or None if there is no match.
+        """
         # If no key is passed, or tree has no root, return none
-        if val is None or self.root is None:
-            nearest_value = None
-        # Else search the tree beginning at the root node
+        if key is None or self.root is None:
+            nearest_node = None
+        # Else recursively search the tree beginning at the root node
         else:
-            nearest_value = self._find_val(val, self._root)
+            nearest_node = self._find_node(key=key, parent_node=self._root, nearest=nearest)
 
-        # return solution
-        return nearest_value
+        # return nearest node
+        return nearest_node
 
-    # Private search method: recursely search tree for node with key val
-    def _find_val(self, val:float, parent_node:BT_Node=None):
+    def _find_node(self, key:float, parent_node:BT_Node=None, nearest:bool=False):
+        """
+        Private recursive search method to find node whose key matches the input key.
+        :param key: Numeric value to find in the binary tree
+        :param parent_node: Node being checked for matching key value
+        :param nearest: Flag, if true and the tree does not contain a node with the input key, the node with the
+        nearest key will be returned, else None will be returned.
+        :return: Node whose key matches the input key, or None if there is no match.
+        """
         # Check parent node key
-        if val == parent_node.key:
-            nearest_value = parent_node.key
+        if key == parent_node.key:
+            nearest_node = parent_node
         # Check left child key
-        elif val < parent_node.key:
+        elif key < parent_node.key:
             # If no left child, return parent
             if parent_node.left_child is None:
-                nearest_value = parent_node.key
-            # Else, search left child
+                if nearest:
+                    nearest_node = parent_node
+                else:
+                    nearest_node = None
+            # Else, search left child recursively
             else:
-                nearest_value = self._find_val(val, parent_node.left_child)
+                nearest_node = self._find_node(key=key, parent_node=parent_node.left_child, nearest=nearest)
         # Check right child key
         else:
             # If no right child, return parent
             if parent_node.right_child is None:
-                nearest_value = parent_node.key
-            # Else, search right child
+                if nearest:
+                    nearest_node = parent_node
+                else:
+                    nearest_node = None
+            # Else, search right child recursively
             else:
-                nearest_value = self._find_val(val, parent_node.right_child)
+                nearest_node = self._find_node(key=key, parent_node=parent_node.right_child, nearest=nearest)
 
         # Check if parent node key is closer than child node
-        if abs(parent_node.key - val) < abs(nearest_value - val):
-            nearest_value = parent_node.key
+        if nearest and abs(parent_node.key - key) < abs(nearest_node.key - key):
+            nearest_node = parent_node
 
-        # Return nearest key
-        return nearest_value
+        # Return nearest node
+        return nearest_node
 
-    # Find kth Largest Node
+    # Find kth Node
     # --------------------------------
-    # Public search method, begins at the root of the tree
-    def find_kth(self, kth:int=0):
-        if kth<0:
-            kth += (self.node_count + 1)  # check that this is right
+    def find_kth(self, kth:int=0) -> BT_Node | None:
+        """
+        Find the node with the kth index, when nodes are sorted in ascending order by key value.
+        :param kth: position
+        :return: node with the kth index, or None if tree is empty.
+        """
+        # Ensure kth is valid
+        if kth > (self.node_count - 1) or kth < -self.node_count:
+            raise IndexError("search index out of range")
+        # Handle negative indices; i.e. negative indicates index from right, as is standard.
+        elif kth<0:
+            kth += (self.node_count + 1)
 
         # If no key is passed, or tree has no root, return none
         if self.root is None:
-            kth_value = None
+            kth_node = None
         # Root is the only node
         elif self.node_count == 1:
-            kth_value = self.root.key
-        # Recursive case
+            kth_node = self.root
+        # Recursively search tree
         else:
-            kth_value = self._find_kth(kth, self.root)
+            kth_node = self._find_kth(kth=kth, parent_node=self.root)
 
-        return kth_value
+        # Return node
+        return kth_node
 
-    # Private search method: recursely search tree for node with key val
-    def _find_kth(self, kth:int=0, parent_node:BT_Node=None):
-
-        # Left child exists
+    def _find_kth(self, kth:int=0, parent_node:BT_Node=None) -> BT_Node:
+        """
+        Private recursive search method to Find the node with the kth index, when nodes are sorted in ascending order
+        by key value.
+        :param kth: position which is always valid due to preprocessing
+        :param parent_node: Node being checked for matching key value
+        :return: node with the kth index
+        """
+        # If there is a left child
         if parent_node.left_child is not None:
+            # By definition, all nodes in the left branch have a key less than the parent. Therefore, if the left branch
+            # has k nodes, the parent is in the kth position (not (k+1)th because zero indexing)
             if kth == parent_node.left_child.node_count:
-                kth_value = parent_node.key
+                kth_node = parent_node
+            # else if kth is less than the number of nodes in the left branch, the left branch must contain the kth node
             elif kth < parent_node.left_child.node_count:
-                kth_value = self._find_kth(kth, parent_node.left_child)
-            elif parent_node.right_child is not None:
-                kth_value = self._find_kth(kth - parent_node.left_child.node_count - 1, parent_node.right_child)
+                # Recursively call _find_kth(...) on the left branch
+                kth_node = self._find_kth(kth=kth, parent_node=parent_node.left_child)
+            # else, the right child must exist and kth must be in the right branch
             else:
-                kth_value = parent_node.key
-        # Left child does not exist
-        else:
-            if kth == 0:
-                kth_value = parent_node.key
-            else:
-                kth_value = self._find_kth(kth - 1, parent_node.right_child)
+                # Recursively call _find_kth(...) on the right branch, but reduce kth by the number of nodes in the left
+                # branch plus one (due to the parent node)
+                kth_node = self._find_kth(kth=(kth - parent_node.left_child.node_count - 1), parent_node=parent_node.right_child)
 
-        return kth_value
+        # If there is no left child, and kth is zero, the parent node must be the kth node
+        elif kth == 0:
+            kth_node = parent_node
+        # Else the right child must exist and contain the kth node
+        else:
+            # Recursively call _find_kth(...) on the right branch, but reduce kth by 1
+            kth_node = self._find_kth(kth=(kth - 1), parent_node=parent_node.right_child)
+
+        # Return the kth_node
+        return kth_node
 
     # Print Tree
     # --------------------------------
@@ -390,6 +442,18 @@ class BT_Tree():
         else:
             return treeLines
 
+    def print_branch(self, branch_root:BT_Node=None, print_key:bool=False, print_val:bool=True, inverted:bool=False) -> None:
+        """
+        Print the contents of the branch of the binary tree beginning at a specified node to console.
+        :param branch_root: Node with is the root of the branch to be printed
+        :param print_key: Flag, if true, node key will be included in output of tree
+        :param print_val: Flag, if true, node value will be included in output of tree
+        :param inverted: Flag, if true, invert display of tree, e.g. as would be appropriate for a family tree
+        :return: None
+        """
+        # Call print method beginning at the specified node as opposed to root
+        self.print(print_key=print_key, print_val=print_val, max_print_height=-1, inverted=inverted, _node=branch_root)
+
     # Clear Tree
     # --------------------------------
     def clear(self) -> None:
@@ -398,49 +462,3 @@ class BT_Tree():
         :return: None
         """
         self.__init__()
-
-def main():
-
-    n = 2 ** 4
-    s = 45
-    k = int(n / 2)
-    seed = 0
-    np.random.seed(seed)
-
-    keys = np.random.randint(low=0, high=10 * n, size=n)
-
-    t = BT_Tree()
-    for this_key in keys:
-        random_letter = string.ascii_letters[np.random.randint(low=0, high=51, size=1)[0]]
-        t.add(key=this_key, value=random_letter)
-
-    print(16 * '=')
-    print(f"elements in vector = {n}")
-    print(f"search for kth element; k = {k}")
-    print(16 * '=')
-    t_ini = time.perf_counter()
-    print(f"kth element found by Numpy: {np.partition(keys, kth=k)[k]}")
-    print(f"time required: {time.perf_counter() - t_ini:.6f} [s]")
-
-    print(16 * '=')
-    t_ini = time.perf_counter()
-    print(f"kth element found by BTree: {t.find_kth(k)}")
-    print(f"time required: {time.perf_counter() - t_ini:.6f} [s]")
-
-    nearest_s = keys[np.argmin(np.abs(keys - s))]
-
-    print(16 * '=')
-    print(f"node count: {t.node_count}")
-    print(f"actual node count: {n}")
-    print(16 * '=')
-    print(f"min height: {int(np.ceil(np.log2(n)))}")
-    print(f"actual height: {t.height}")
-    print(16 * '=')
-    print(f"nearest s = {s}: {nearest_s}")
-    print(f"found nearest s = {s}: {t.find_val(s)}")
-    print(16 * '=')
-    ""
-    t.print(print_key=True, print_val=False, max_print_height=-1)
-
-if __name__ == '__main__':
-    main()
